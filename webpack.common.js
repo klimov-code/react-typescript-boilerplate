@@ -1,65 +1,56 @@
-// webpack.common.js - common webpack config
-const LEGACY_CONFIG = 'legacy';
-const MODERN_CONFIG = 'modern';
-
 // node modules
-import { resolve as _resolve } from 'path';
-import merge from 'webpack-merge';
+const path = require('path');
+const merge = require('webpack-merge');
 
 // webpack plugins
-import CopyWebpackPlugin from 'copy-webpack-plugin';
-import ManifestPlugin from 'webpack-manifest-plugin';
-import WebpackNotifierPlugin from 'webpack-notifier';
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const ManifestPlugin = require('webpack-manifest-plugin');
+const WebpackNotifierPlugin = require('webpack-notifier');
 
 // config files
-import { name as _name, browserslist } from './package.json';
-import {
-  entries as _entries,
-  paths,
-  manifestConfig,
-  urls,
-  copyWebpackConfig
-} from './webpack.settings.js';
+const pkg = require('./package.json');
+const settings = require('./webpack.settings.js');
 
 // Configure Babel loader
 const configureBabelLoader = browserList => {
   return {
-    test: /\.js$/,
+    test: /\.jsx?$/,
     exclude: /node_modules/,
     use: {
       loader: 'babel-loader',
       options: {
         presets: [
           [
-            '@babel/preset-env',
+            '@babel/env',
             {
               modules: false,
               useBuiltIns: 'entry',
               targets: {
-                browsers: browserList
-              }
-            }
-          ]
+                browsers: browserList,
+              },
+            },
+          ],
+          '@babel/react',
         ],
         plugins: [
-          '@babel/plugin-syntax-dynamic-import',
+          '@babel/syntax-dynamic-import',
           [
-            '@babel/plugin-transform-runtime',
+            '@babel/transform-runtime',
             {
-              regenerator: true
-            }
-          ]
-        ]
-      }
-    }
+              regenerator: true,
+            },
+          ],
+        ],
+      },
+    },
   };
 };
 
 // Configure Entries
 const configureEntries = () => {
   let entries = {};
-  for (const [key, value] of Object.entries(_entries)) {
-    entries[key] = _resolve(__dirname, paths.src.js + value);
+  for (const [key, value] of Object.entries(settings.entries)) {
+    entries[key] = path.resolve(__dirname, settings.paths.src.js + value);
   }
 
   return entries;
@@ -73,10 +64,10 @@ const configureFontLoader = () => {
       {
         loader: 'file-loader',
         options: {
-          name: 'fonts/[name].[ext]'
-        }
-      }
-    ]
+          name: 'fonts/[name].[ext]',
+        },
+      },
+    ],
   };
 };
 
@@ -84,70 +75,59 @@ const configureFontLoader = () => {
 const configureManifest = fileName => {
   return {
     fileName: fileName,
-    basePath: manifestConfig.basePath,
+    basePath: settings.manifestConfig.basePath,
     map: file => {
       file.name = file.name.replace(/(\.[a-f0-9]{32})(\..*)$/, '$2');
       return file;
-    }
-  };
-};
-
-// Configure Vue loader
-const configureVueLoader = () => {
-  return {
-    test: /\.vue$/,
-    loader: 'vue-loader'
+    },
   };
 };
 
 // The base webpack config
 const baseConfig = {
-  name: _name,
+  name: pkg.name,
   entry: configureEntries(),
   output: {
-    path: _resolve(__dirname, paths.dist.base),
-    publicPath: urls.publicPath
+    path: path.resolve(__dirname, settings.paths.dist.base),
+    publicPath: settings.urls.publicPath,
   },
   resolve: {
-    alias: {
-      vue$: 'vue/dist/vue.esm.js'
-    }
+    extensions: ['.ts', '.tsx', '.js', '.jsx'],
   },
   module: {
-    rules: [configureFontLoader(), configureVueLoader()]
+    rules: [configureFontLoader()],
   },
   plugins: [
     new WebpackNotifierPlugin({
       title: 'Webpack',
       excludeWarnings: true,
-      alwaysNotify: true
+      alwaysNotify: true,
     }),
-    new VueLoaderPlugin()
-  ]
+  ],
 };
 
 // Legacy webpack config
 const legacyConfig = {
   module: {
-    rules: [configureBabelLoader(Object.values(browserslist.legacyBrowsers))]
+    rules: [configureBabelLoader(Object.values(pkg.browserslist.legacyBrowsers))],
   },
   plugins: [
-    new CopyWebpackPlugin(copyWebpackConfig),
-    new ManifestPlugin(configureManifest('manifest-legacy.json'))
-  ]
+    new CopyWebpackPlugin(settings.copyWebpackConfig),
+    new ManifestPlugin(configureManifest('manifest-legacy.json')),
+  ],
 };
 
 // Modern webpack config
 const modernConfig = {
   module: {
-    rules: [configureBabelLoader(Object.values(browserslist.modernBrowsers))]
+    rules: [configureBabelLoader(Object.values(pkg.browserslist.modernBrowsers))],
   },
-  plugins: [new ManifestPlugin(configureManifest('manifest.json'))]
+  plugins: [new ManifestPlugin(configureManifest('manifest.json'))],
 };
 
 // Common module exports
 // noinspection WebpackConfigHighlighting
-export default {
+module.exports = {
   legacyConfig: merge(legacyConfig, baseConfig),
-  modernConfig: merge(modernConfig, baseConfig)
+  modernConfig: merge(modernConfig, baseConfig),
 };
