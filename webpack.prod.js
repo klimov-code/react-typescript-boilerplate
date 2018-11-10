@@ -4,27 +4,22 @@ const MODERN_CONFIG = 'modern';
 
 // node modules
 const git = require('git-rev-sync');
-const glob = require('glob-all');
 const merge = require('webpack-merge');
 const moment = require('moment');
 const path = require('path');
-const BannerPlugin = require('webpack/lib/BannerPlugin');
-const ModuleConcatenationPlugin = require('webpack/lib/optimize/ModuleConcatenationPlugin');
+const webpack = require('webpack');
 
 // webpack plugins
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 const CreateSymlinkPlugin = require('create-symlink-webpack-plugin');
 const CriticalCssPlugin = require('critical-css-webpack-plugin');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ImageminWebpWebpackPlugin = require('imagemin-webp-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
-const PurgecssPlugin = require('purgecss-webpack-plugin');
 const SaveRemoteFilePlugin = require('save-remote-file-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const WebappWebpackPlugin = require('webapp-webpack-plugin');
-const WhitelisterPlugin = require('purgecss-whitelister');
 const WorkboxPlugin = require('workbox-webpack-plugin');
 
 // config files
@@ -32,34 +27,22 @@ const common = require('./webpack.common.js');
 const pkg = require('./package.json');
 const settings = require('./webpack.settings.js');
 
-// Custom PurgeCSS extractor for Tailwind that allows special characters in
-// class names.
-//
-// https://github.com/FullHuman/purgecss#extractor
-class TailwindExtractor {
-  static extract(content) {
-    return content.match(/[A-Za-z0-9-_:\/]+/g) || [];
-  }
-}
-
 // Configure file banner
-const configureBanner = () => {
-  return {
-    banner: [
-      '/*!',
-      ' * @project        ' + settings.name,
-      ' * @name           ' + '[filebase]',
-      ' * @author         ' + pkg.author.name,
-      ' * @build          ' + moment().format('llll') + ' ET',
-      ' * @release        ' + git.long() + ' [' + git.branch() + ']',
-      ' * @copyright      Copyright (c) ' + moment().format('YYYY') + ' ' + settings.copyright,
-      ' *',
-      ' */',
-      '',
-    ].join('\n'),
-    raw: true,
-  };
-};
+const configureBanner = () => ({
+  banner: [
+    '/*!',
+    ' * @project        ' + settings.name,
+    ' * @name           ' + '[filebase]',
+    ' * @author         ' + pkg.author.name,
+    ' * @build          ' + moment().format('llll') + ' ET',
+    ' * @release        ' + git.long() + ' [' + git.branch() + ']',
+    ' * @copyright      Copyright (c) ' + moment().format('YYYY') + ' ' + settings.copyright,
+    ' *',
+    ' */',
+    '',
+  ].join('\n'),
+  raw: true,
+});
 
 // Configure Bundle Analyzer
 const configureBundleAnalyzer = buildType => {
@@ -78,8 +61,8 @@ const configureBundleAnalyzer = buildType => {
 };
 
 // Configure Critical CSS
-const configureCriticalCss = () => {
-  return criticalCssConfig.pages.map(row => {
+const configureCriticalCss = () =>
+  settings.criticalCssConfig.pages.map(row => {
     const criticalSrc = settings.urls.critical + row.url;
     const criticalDest =
       settings.criticalCssConfig.base + row.template + settings.criticalCssConfig.suffix;
@@ -102,25 +85,13 @@ const configureCriticalCss = () => {
       height: criticalHeight,
     });
   });
-};
 
 // Configure Clean webpack
-const configureCleanWebpack = () => {
-  return {
-    root: path.resolve(__dirname, settings.paths.dist.base),
-    verbose: true,
-    dry: false,
-  };
-};
-
-// Configure Html webpack
-const configureHtml = () => {
-  return {
-    templateContent: '',
-    filename: 'webapp.html',
-    inject: false,
-  };
-};
+const configureCleanWebpack = () => ({
+  root: path.resolve(__dirname, settings.paths.build.base),
+  verbose: true,
+  dry: false,
+});
 
 // Configure Image loader
 const configureImageLoader = buildType => {
@@ -182,7 +153,7 @@ const configureOptimization = buildType => {
           common: false,
           styles: {
             name: settings.vars.cssName,
-            test: /\.(pcss|css|vue)$/,
+            test: /\.(p?css)$/,
             chunks: 'all',
             enforce: true,
           },
@@ -206,6 +177,7 @@ const configureOptimization = buildType => {
   if (buildType === MODERN_CONFIG) {
     return {
       minimizer: [new TerserPlugin(configureTerser())],
+      concatenateModules: true,
     };
   }
 };
@@ -214,7 +186,7 @@ const configureOptimization = buildType => {
 const configurePostcssLoader = buildType => {
   if (buildType === LEGACY_CONFIG) {
     return {
-      test: /\.(pcss|css)$/,
+      test: /\.(p?css)$/,
       use: [
         MiniCssExtractPlugin.loader,
         {
@@ -239,62 +211,37 @@ const configurePostcssLoader = buildType => {
   // Don't generate CSS for the modern config in production
   if (buildType === MODERN_CONFIG) {
     return {
-      test: /\.(pcss|css)$/,
+      test: /\.(p?css)$/,
       loader: 'ignore-loader',
     };
   }
 };
 
-// Configure PurgeCSS
-const configurePurgeCss = () => {
-  let paths = [];
-  // Configure whitelist paths
-  for (const [key, value] of Object.entries(settings.purgeCssConfig.paths)) {
-    paths.push(path.join(__dirname, value));
-  }
-
-  return {
-    paths: glob.sync(paths),
-    whitelist: WhitelisterPlugin(settings.purgeCssConfig.whitelist),
-    whitelistPatterns: settings.purgeCssConfig.whitelistPatterns,
-    extractors: [
-      {
-        extractor: TailwindExtractor,
-        extensions: settings.purgeCssConfig.extensions,
-      },
-    ],
-  };
-};
-
 // Configure terser
-const configureTerser = () => {
-  return {
-    cache: true,
-    parallel: true,
-    sourceMap: true,
-  };
-};
+const configureTerser = () => ({
+  cache: true,
+  parallel: true,
+  sourceMap: true,
+});
 
 // Configure Webapp webpack
-const configureWebapp = () => {
-  return {
-    logo: settings.webappConfig.logo,
-    prefix: settings.webappConfig.prefix,
-    cache: false,
-    inject: 'force',
-    favicons: {
-      appName: pkg.name,
-      appDescription: pkg.description,
-      developerName: pkg.author.name,
-      developerURL: pkg.author.url,
-      path: settings.paths.dist.base,
-    },
-  };
-};
+const configureWebapp = () => ({
+  logo: settings.webappConfig.logo,
+  prefix: settings.webappConfig.prefix,
+  cache: false,
+  inject: 'force',
+  favicons: {
+    appName: pkg.name,
+    appDescription: pkg.description,
+    developerName: pkg.author.name,
+    developerURL: pkg.author.url,
+    path: settings.paths.build.base,
+  },
+});
 
 // Configure Workbox service worker
 const configureWorkbox = () => {
-  let config = settings.workboxConfig;
+  const config = settings.workboxConfig;
 
   return config;
 };
@@ -303,7 +250,7 @@ const configureWorkbox = () => {
 module.exports = [
   merge(common.legacyConfig, {
     output: {
-      filename: path.join('./js', '[name]-legacy.[chunkhash].js'),
+      filename: '[name]-legacy.[hash:base64:8].js',
     },
     mode: 'production',
     devtool: 'source-map',
@@ -312,23 +259,21 @@ module.exports = [
       rules: [configurePostcssLoader(LEGACY_CONFIG), configureImageLoader(LEGACY_CONFIG)],
     },
     plugins: [
-      new CleanWebpackPlugin(settings.paths.dist.clean, configureCleanWebpack()),
+      new CleanWebpackPlugin(settings.paths.build.clean, configureCleanWebpack()),
       new MiniCssExtractPlugin({
-        path: path.resolve(__dirname, settings.paths.dist.base),
+        path: path.resolve(__dirname, settings.paths.build.base),
         filename: path.join('./css', '[name].[chunkhash].css'),
       }),
-      new PurgecssPlugin(configurePurgeCss()),
-      new BannerPlugin(configureBanner()),
-      new HtmlWebpackPlugin(configureHtml()),
+      new webpack.BannerPlugin(configureBanner()),
       new WebappWebpackPlugin(configureWebapp()),
-      new CreateSymlinkPlugin(createSymlinkConfig, true),
-      new SaveRemoteFilePlugin(saveRemoteFileConfig),
+      new CreateSymlinkPlugin(settings.createSymlinkConfig, true),
+      new SaveRemoteFilePlugin(settings.saveRemoteFileConfig),
       new BundleAnalyzerPlugin(configureBundleAnalyzer(LEGACY_CONFIG)),
     ].concat(configureCriticalCss()),
   }),
   merge(common.modernConfig, {
     output: {
-      filename: path.join('./js', '[name].[chunkhash].js'),
+      filename: '[name].[hash:base64:8].js',
     },
     mode: 'production',
     devtool: 'source-map',
@@ -337,8 +282,7 @@ module.exports = [
       rules: [configurePostcssLoader(MODERN_CONFIG), configureImageLoader(MODERN_CONFIG)],
     },
     plugins: [
-      new ModuleConcatenationPlugin(),
-      new BannerPlugin(configureBanner()),
+      new webpack.BannerPlugin(configureBanner()),
       new ImageminWebpWebpackPlugin(),
       new WorkboxPlugin.GenerateSW(configureWorkbox()),
       new BundleAnalyzerPlugin(configureBundleAnalyzer(MODERN_CONFIG)),

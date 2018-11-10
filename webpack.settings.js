@@ -14,23 +14,23 @@ module.exports = {
       css: './src/css/',
       js: './src/js/',
     },
-    dist: {
-      base: './web/dist/',
+    build: {
+      base: './build',
       clean: ['./img', './criticalcss', './css', './js'],
     },
-    templates: './templates/',
+    public: './public',
   },
   urls: {
-    live: '',
-    local: '',
-    critical: '',
-    publicPath: '/dist/',
+    live: '/',
+    local: '/',
+    critical: '/',
+    publicPath: '/',
   },
   vars: {
     cssName: 'styles',
   },
   entries: {
-    app: 'app.jsx',
+    app: 'index.tsx',
   },
   copyWebpackConfig: [
     {
@@ -39,7 +39,7 @@ module.exports = {
     },
   ],
   criticalCssConfig: {
-    base: './web/dist/criticalcss/',
+    base: './build/dist/criticalcss/',
     suffix: '_critical.min.css',
     criticalHeight: 1200,
     criticalWidth: 1200,
@@ -56,18 +56,12 @@ module.exports = {
   devServerConfig: {
     public: () => process.env.DEVSERVER_PUBLIC || 'http://localhost:3000',
     host: () => process.env.DEVSERVER_HOST || 'localhost',
-    poll: () => process.env.DEVSERVER_POLL || false,
+    poll: () => process.env.DEVSERVER_POLL || true,
     port: () => process.env.DEVSERVER_PORT || 3000,
     https: () => process.env.DEVSERVER_HTTPS || false,
   },
   manifestConfig: {
-    basePath: '',
-  },
-  purgeCssConfig: {
-    paths: ['./templates/**/*.html', './src/vue/**/*.html'],
-    whitelist: ['./src/css/components/**/*.{css,pcss}'],
-    whitelistPatterns: [],
-    extensions: ['html', 'js', 'jsx', 'tsx'],
+    basePath: '/',
   },
   saveRemoteFileConfig: [
     {
@@ -90,7 +84,7 @@ module.exports = {
     precacheManifestFilename: 'js/precache-manifest.[manifestHash].js',
     importScripts: ['/dist/workbox-catch-handler.js'],
     exclude: [/\.(png|jpe?g|gif|svg|webp)$/i, /\.map$/, /^manifest.*\\.js(?:on)?$/],
-    globDirectory: './web/',
+    globDirectory: './build/',
     globPatterns: ['offline.html', 'offline.svg'],
     offlineGoogleAnalytics: true,
     runtimeCaching: [
