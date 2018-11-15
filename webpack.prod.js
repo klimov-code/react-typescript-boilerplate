@@ -1,19 +1,16 @@
-// webpack.prod.js - production builds
 const LEGACY_CONFIG = 'legacy';
 const MODERN_CONFIG = 'modern';
 
-// node modules
 const git = require('git-rev-sync');
 const merge = require('webpack-merge');
 const moment = require('moment');
 const path = require('path');
 const webpack = require('webpack');
 
-// webpack plugins
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 const CreateSymlinkPlugin = require('create-symlink-webpack-plugin');
-const CriticalCssPlugin = require('critical-css-webpack-plugin');
+const HtmlCriticalWebpackPlugin = require('html-critical-webpack-plugin');
 const ImageminWebpWebpackPlugin = require('imagemin-webp-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
@@ -22,12 +19,10 @@ const TerserPlugin = require('terser-webpack-plugin');
 const WebappWebpackPlugin = require('webapp-webpack-plugin');
 const WorkboxPlugin = require('workbox-webpack-plugin');
 
-// config files
 const common = require('./webpack.common.js');
 const pkg = require('./package.json');
 const settings = require('./webpack.settings.js');
 
-// Configure file banner
 const configureBanner = () => ({
   banner: [
     '/*!',
@@ -44,7 +39,6 @@ const configureBanner = () => ({
   raw: true,
 });
 
-// Configure Bundle Analyzer
 const configureBundleAnalyzer = buildType => {
   if (buildType === LEGACY_CONFIG) {
     return {
@@ -60,8 +54,7 @@ const configureBundleAnalyzer = buildType => {
   }
 };
 
-// Configure Critical CSS
-const configureCriticalCss = () =>
+const configureHtmlCritical = () =>
   settings.criticalCssConfig.pages.map(row => {
     const criticalSrc = settings.urls.critical + row.url;
     const criticalDest =
@@ -74,7 +67,7 @@ const configureCriticalCss = () =>
       criticalHeight = settings.criticalCssConfig.ampCriticalHeight;
     }
     console.log('source: ' + criticalSrc + ' dest: ' + criticalDest);
-    return new CriticalCssPlugin({
+    return new HtmlCriticalWebpackPlugin({
       base: './',
       src: criticalSrc,
       dest: criticalDest,
@@ -86,14 +79,12 @@ const configureCriticalCss = () =>
     });
   });
 
-// Configure Clean webpack
 const configureCleanWebpack = () => ({
   root: path.resolve(__dirname, settings.paths.build.base),
   verbose: true,
   dry: false,
 });
 
-// Configure Image loader
 const configureImageLoader = buildType => {
   if (buildType === LEGACY_CONFIG) {
     return {
@@ -143,7 +134,6 @@ const configureImageLoader = buildType => {
   }
 };
 
-// Configure optimization
 const configureOptimization = buildType => {
   if (buildType === LEGACY_CONFIG) {
     return {
@@ -182,7 +172,6 @@ const configureOptimization = buildType => {
   }
 };
 
-// Configure Postcss loader
 const configurePostcssLoader = buildType => {
   if (buildType === LEGACY_CONFIG) {
     return {
@@ -217,14 +206,12 @@ const configurePostcssLoader = buildType => {
   }
 };
 
-// Configure terser
 const configureTerser = () => ({
   cache: true,
   parallel: true,
   sourceMap: true,
 });
 
-// Configure Webapp webpack
 const configureWebapp = () => ({
   logo: settings.webappConfig.logo,
   prefix: settings.webappConfig.prefix,
@@ -239,18 +226,16 @@ const configureWebapp = () => ({
   },
 });
 
-// Configure Workbox service worker
 const configureWorkbox = () => {
   const config = settings.workboxConfig;
 
   return config;
 };
 
-// Production module exports
 module.exports = [
   merge(common.legacyConfig, {
     output: {
-      filename: '[name]-legacy.[hash:base64:8].js',
+      filename: '[name]-legacy.[hash:base64].js',
     },
     mode: 'production',
     devtool: 'source-map',
@@ -268,12 +253,13 @@ module.exports = [
       new WebappWebpackPlugin(configureWebapp()),
       new CreateSymlinkPlugin(settings.createSymlinkConfig, true),
       new SaveRemoteFilePlugin(settings.saveRemoteFileConfig),
+      new webpack.ProgressPlugin(),
       new BundleAnalyzerPlugin(configureBundleAnalyzer(LEGACY_CONFIG)),
-    ].concat(configureCriticalCss()),
+    ].concat(configureHtmlCritical()),
   }),
   merge(common.modernConfig, {
     output: {
-      filename: '[name].[hash:base64:8].js',
+      filename: '[name].[hash:base64].js',
     },
     mode: 'production',
     devtool: 'source-map',
@@ -285,6 +271,7 @@ module.exports = [
       new webpack.BannerPlugin(configureBanner()),
       new ImageminWebpWebpackPlugin(),
       new WorkboxPlugin.GenerateSW(configureWorkbox()),
+      new webpack.ProgressPlugin(),
       new BundleAnalyzerPlugin(configureBundleAnalyzer(MODERN_CONFIG)),
     ],
   }),
