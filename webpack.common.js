@@ -1,21 +1,18 @@
-// node modules
 const path = require('path');
 const merge = require('webpack-merge');
 
-// webpack plugins
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const ManifestPlugin = require('webpack-manifest-plugin');
 const WebpackNotifierPlugin = require('webpack-notifier');
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
-// config files
 const pkg = require('./package.json');
 const settings = require('./webpack.settings.js');
 
-// Configure Entries
 const configureEntries = () => {
   let entries = {};
+
   for (const [key, value] of Object.entries(settings.entries)) {
     entries[key] = [path.resolve(__dirname, settings.paths.src.base + value)];
   }
@@ -23,7 +20,6 @@ const configureEntries = () => {
   return entries;
 };
 
-// Configure Babel loader
 const configureBabelLoader = browserList => ({
   test: /\.(t|j)sx?$/,
   exclude: /node_modules/,
@@ -55,7 +51,6 @@ const configureBabelLoader = browserList => ({
   },
 });
 
-// Configure Font loader
 const configureFontLoader = () => ({
   test: /\.(ttf|eot|woff2?)$/i,
   use: [
@@ -68,7 +63,6 @@ const configureFontLoader = () => ({
   ],
 });
 
-// Configure Manifest
 const configureManifest = fileName => ({
   fileName: fileName,
   basePath: settings.manifestConfig.basePath,
@@ -78,13 +72,11 @@ const configureManifest = fileName => ({
   },
 });
 
-// Configure Html webpack
 const configureHtml = () => ({
   template: path.join(__dirname, settings.paths.public, '/index.html'),
   inject: true,
 });
 
-// The base webpack config
 const baseConfig = {
   name: pkg.name,
   entry: Object.assign(
@@ -115,7 +107,6 @@ const baseConfig = {
   ],
 };
 
-// Legacy webpack config
 const legacyConfig = {
   module: {
     rules: [configureBabelLoader(Object.values(pkg.browserslist.legacyBrowsers))],
@@ -126,7 +117,6 @@ const legacyConfig = {
   ],
 };
 
-// Modern webpack config
 const modernConfig = {
   module: {
     rules: [configureBabelLoader(Object.values(pkg.browserslist.modernBrowsers))],
@@ -134,8 +124,6 @@ const modernConfig = {
   plugins: [new ManifestPlugin(configureManifest('manifest.json'))],
 };
 
-// Common module exports
-// noinspection WebpackConfigHighlighting
 module.exports = {
   legacyConfig: merge(legacyConfig, baseConfig),
   modernConfig: merge(modernConfig, baseConfig),

@@ -1,24 +1,19 @@
-// webpack.dev.js - developmental builds
 const LEGACY_CONFIG = 'legacy';
 const MODERN_CONFIG = 'modern';
 
-// node modules
 const merge = require('webpack-merge');
 const path = require('path');
 const sane = require('sane');
 const webpack = require('webpack');
 
-// webpack plugins
 const Dashboard = require('webpack-dashboard');
 const DashboardPlugin = require('webpack-dashboard/plugin');
 const dashboard = new Dashboard();
 
-// config files
 const pkg = require('./package.json');
 const common = require('./webpack.common.js');
 const settings = require('./webpack.settings.js');
 
-// Configure the webpack-dev-server
 const configureDevServer = () => ({
   public: settings.devServerConfig.public(),
   host: settings.devServerConfig.host(),
@@ -53,7 +48,6 @@ const configureDevServer = () => ({
   },
 });
 
-// Configure Image loader
 const configureImageLoader = buildType => {
   if (buildType === LEGACY_CONFIG) {
     return {
@@ -83,7 +77,6 @@ const configureImageLoader = buildType => {
   }
 };
 
-// Configure the Postcss loader
 const configurePostcssLoader = buildType => {
   // Don't generate CSS for the legacy config in development
   if (buildType === LEGACY_CONFIG) {
@@ -133,7 +126,6 @@ const configureOptimization = buildType => {
   }
 };
 
-// Development module exports
 module.exports = [
   merge(common.legacyConfig, {
     output: {

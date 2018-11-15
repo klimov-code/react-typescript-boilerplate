@@ -1,24 +1,19 @@
-// webpack.settings.js - webpack settings config
-
-// node modules
 require('dotenv').config();
 
-// Webpack settings exports
-// noinspection WebpackConfigHighlighting
 module.exports = {
   name: 'Therapy homepage',
   copyright: 'Ilya Klimov',
   paths: {
     src: {
-      base: './src/',
-      css: './src/css/',
-      js: './src/js/',
+      base: 'src/',
+      css: 'src/css/',
+      js: 'src/js/',
     },
     build: {
-      base: './build',
-      clean: ['./img', './criticalcss', './css', './js'],
+      base: 'build',
+      clean: ['./**/*'],
     },
-    public: './public',
+    public: 'public',
   },
   urls: {
     live: '/',
@@ -35,11 +30,11 @@ module.exports = {
   copyWebpackConfig: [
     {
       from: './src/js/workbox-catch-handler.js',
-      to: 'js/[name].[ext]',
+      to: '[name].[ext]',
     },
   ],
   criticalCssConfig: {
-    base: './build/dist/criticalcss/',
+    base: '/build/criticalcss/',
     suffix: '_critical.min.css',
     criticalHeight: 1200,
     criticalWidth: 1200,
@@ -61,12 +56,12 @@ module.exports = {
     https: () => process.env.DEVSERVER_HTTPS || false,
   },
   manifestConfig: {
-    basePath: '/',
+    basePath: '',
   },
   saveRemoteFileConfig: [
     {
       url: 'https://www.google-analytics.com/analytics.js',
-      filepath: 'js/analytics.js',
+      filepath: 'analytics.js',
     },
   ],
   createSymlinkConfig: [
@@ -80,11 +75,11 @@ module.exports = {
     prefix: 'img/favicons/',
   },
   workboxConfig: {
-    swDest: '../sw.js',
-    precacheManifestFilename: 'js/precache-manifest.[manifestHash].js',
-    importScripts: ['/dist/workbox-catch-handler.js'],
+    swDest: 'sw.js',
+    precacheManifestFilename: 'precache-manifest.[manifestHash].js',
+    importScripts: ['/build/workbox-catch-handler.js'],
     exclude: [/\.(png|jpe?g|gif|svg|webp)$/i, /\.map$/, /^manifest.*\\.js(?:on)?$/],
-    globDirectory: './build/',
+    globDirectory: 'build',
     globPatterns: ['offline.html', 'offline.svg'],
     offlineGoogleAnalytics: true,
     runtimeCaching: [
