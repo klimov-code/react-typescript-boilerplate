@@ -6,6 +6,7 @@ const ManifestPlugin = require('webpack-manifest-plugin');
 const WebpackNotifierPlugin = require('webpack-notifier');
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
 
 const pkg = require('./package.json');
 const settings = require('./webpack.settings.js');
@@ -14,7 +15,7 @@ const configureEntries = () => {
   let entries = {};
 
   for (const [key, value] of Object.entries(settings.entries)) {
-    entries[key] = [path.resolve(__dirname, settings.paths.src.base + value)];
+    entries[key] = path.resolve(__dirname, settings.paths.src.base + value);
   }
 
   return entries;
@@ -77,15 +78,16 @@ const configureHtml = () => ({
   inject: true,
 });
 
+const configureHtmlExt = () => ({
+  custom: [
+    { test: /\w+(?!legacy)/, attribute: 'type', value: 'module' },
+    { test: /\w+(legacy)/, attribute: 'nomodule' },
+  ],
+});
+
 const baseConfig = {
   name: pkg.name,
-  entry: Object.assign(
-    {},
-    {
-      vendor: ['@babel/polyfill'],
-    },
-    configureEntries(),
-  ),
+  entry: configureEntries(),
   output: {
     path: path.resolve(__dirname, settings.paths.build.base),
     publicPath: settings.urls.publicPath,
@@ -103,11 +105,15 @@ const baseConfig = {
       alwaysNotify: true,
     }),
     new HtmlWebpackPlugin(configureHtml()),
+    new ScriptExtHtmlWebpackPlugin(configureHtmlExt()),
     new ForkTsCheckerWebpackPlugin(),
   ],
 };
 
 const legacyConfig = {
+  entry: {
+    vendor: '@babel/polyfill',
+  },
   module: {
     rules: [configureBabelLoader(Object.values(pkg.browserslist.legacyBrowsers))],
   },
@@ -125,6 +131,12 @@ const modernConfig = {
 };
 
 module.exports = {
-  legacyConfig: merge(legacyConfig, baseConfig),
-  modernConfig: merge(modernConfig, baseConfig),
+  legacyConfig: merge.strategy({
+    module: 'prepend',
+    plugins: 'prepend',
+  })(baseConfig, legacyConfig),
+  modernConfig: merge.strategy({
+    module: 'prepend',
+    plugins: 'prepend',
+  })(baseConfig, modernConfig),
 };

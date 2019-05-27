@@ -235,7 +235,7 @@ const configureWorkbox = () => {
 module.exports = [
   merge(common.legacyConfig, {
     output: {
-      filename: '[name]-legacy.[hash:base64].js',
+      filename: '[name]-legacy.[hash:10].js',
     },
     mode: 'production',
     devtool: 'source-map',
@@ -253,13 +253,12 @@ module.exports = [
       new WebappWebpackPlugin(configureWebapp()),
       new CreateSymlinkPlugin(settings.createSymlinkConfig, true),
       new SaveRemoteFilePlugin(settings.saveRemoteFileConfig),
-      new webpack.ProgressPlugin(),
       new BundleAnalyzerPlugin(configureBundleAnalyzer(LEGACY_CONFIG)),
-    ].concat(configureHtmlCritical()),
+    ] /* .concat(configureHtmlCritical()), */,
   }),
   merge(common.modernConfig, {
     output: {
-      filename: '[name].[hash:base64].js',
+      filename: '[name].[hash:10].js',
     },
     mode: 'production',
     devtool: 'source-map',
@@ -271,7 +270,6 @@ module.exports = [
       new webpack.BannerPlugin(configureBanner()),
       new ImageminWebpWebpackPlugin(),
       new WorkboxPlugin.GenerateSW(configureWorkbox()),
-      new webpack.ProgressPlugin(),
       new BundleAnalyzerPlugin(configureBundleAnalyzer(MODERN_CONFIG)),
     ],
   }),

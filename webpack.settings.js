@@ -19,7 +19,7 @@ module.exports = {
     live: '/',
     local: '/',
     critical: '/',
-    publicPath: '/',
+    publicPath: './',
   },
   vars: {
     cssName: 'styles',
@@ -67,7 +67,7 @@ module.exports = {
   createSymlinkConfig: [
     {
       origin: 'img/favicons/favicon.ico',
-      symlink: '../favicon.ico',
+      symlink: 'favicon.ico',
     },
   ],
   webappConfig: {
